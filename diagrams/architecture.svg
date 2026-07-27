@@ -1,0 +1,191 @@
+<svg width="100%" viewBox="0 0 680 780" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>AI-Powered SIEM Dashboard — Architecture Diagram</title>
+  <desc>Layered architecture showing log sources flowing through Wazuh agent, manager, indexer, AI microservice, dashboard, and integrations.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .th { font-size: 14px; font-weight: 500; fill: #1a1a1a; }
+      .ts { font-size: 12px; fill: #555; }
+      .arr { stroke: #888; stroke-width: 1.5; fill: none; }
+      .layer-label { font-size: 10px; fill: #999; }
+
+      /* Collection layer */
+      .col-box rect  { fill: #F1EFE8; stroke: #888780; }
+      .col-box text  { fill: #444441; }
+      .agent rect    { fill: #E1F5EE; stroke: #0F6E56; }
+      .agent text    { fill: #085041; }
+
+      /* Detection */
+      .detect rect   { fill: #E1F5EE; stroke: #0F6E56; }
+      .detect text   { fill: #085041; }
+
+      /* Storage */
+      .store rect    { fill: #E6F1FB; stroke: #185FA5; }
+      .store text    { fill: #0C447C; }
+
+      /* AI */
+      .ai rect       { fill: #EEEDFE; stroke: #534AB7; }
+      .ai text       { fill: #3C3489; }
+
+      /* Dashboard */
+      .dash rect     { fill: #FAEEDA; stroke: #854F0B; }
+      .dash text     { fill: #633806; }
+
+      /* Integrations */
+      .integ rect    { fill: #FAECE7; stroke: #993C1D; }
+      .integ text    { fill: #712B13; }
+
+      @media (prefers-color-scheme: dark) {
+        .th { fill: #e8e6e0; }
+        .ts { fill: #9c9a92; }
+        .arr { stroke: #6b6a65; }
+        .layer-label { fill: #6b6a65; }
+
+        .col-box rect  { fill: #2C2C2A; stroke: #5F5E5A; }
+        .col-box text  { fill: #D3D1C7; }
+        .agent rect    { fill: #04342C; stroke: #1D9E75; }
+        .agent text    { fill: #9FE1CB; }
+
+        .detect rect   { fill: #04342C; stroke: #1D9E75; }
+        .detect text   { fill: #9FE1CB; }
+
+        .store rect    { fill: #042C53; stroke: #378ADD; }
+        .store text    { fill: #B5D4F4; }
+
+        .ai rect       { fill: #26215C; stroke: #7F77DD; }
+        .ai text       { fill: #CECBF6; }
+
+        .dash rect     { fill: #412402; stroke: #BA7517; }
+        .dash text     { fill: #FAC775; }
+
+        .integ rect    { fill: #4A1B0C; stroke: #D85A30; }
+        .integ text    { fill: #F5C4B3; }
+      }
+    </style>
+  </defs>
+
+  <!-- Layer labels -->
+  <text class="layer-label" x="30" y="84" text-anchor="middle" transform="rotate(-90,30,84)">Collection</text>
+  <text class="layer-label" x="30" y="200" text-anchor="middle" transform="rotate(-90,30,200)">Detection</text>
+  <text class="layer-label" x="30" y="330" text-anchor="middle" transform="rotate(-90,30,330)">Storage</text>
+  <text class="layer-label" x="30" y="460" text-anchor="middle" transform="rotate(-90,30,460)">AI layer</text>
+  <text class="layer-label" x="30" y="585" text-anchor="middle" transform="rotate(-90,30,585)">Dashboard</text>
+  <text class="layer-label" x="30" y="710" text-anchor="middle" transform="rotate(-90,30,710)">Integrations</text>
+
+  <!-- Dividers -->
+  <line x1="50" y1="134" x2="640" y2="134" stroke="#ccc" stroke-width="0.5" stroke-dasharray="4 4"/>
+  <line x1="50" y1="254" x2="640" y2="254" stroke="#ccc" stroke-width="0.5" stroke-dasharray="4 4"/>
+  <line x1="50" y1="384" x2="640" y2="384" stroke="#ccc" stroke-width="0.5" stroke-dasharray="4 4"/>
+  <line x1="50" y1="514" x2="640" y2="514" stroke="#ccc" stroke-width="0.5" stroke-dasharray="4 4"/>
+  <line x1="50" y1="644" x2="640" y2="644" stroke="#ccc" stroke-width="0.5" stroke-dasharray="4 4"/>
+
+  <!-- ROW 1: Log Sources -->
+  <g class="col-box"><rect x="56" y="44" width="116" height="44" rx="8" stroke-width="0.5"/>
+    <text class="th" x="114" y="62" text-anchor="middle" dominant-baseline="central">Windows</text>
+    <text class="ts" x="114" y="78" text-anchor="middle" dominant-baseline="central">Event Log, Sysmon</text></g>
+  <g class="col-box"><rect x="192" y="44" width="116" height="44" rx="8" stroke-width="0.5"/>
+    <text class="th" x="250" y="62" text-anchor="middle" dominant-baseline="central">Linux</text>
+    <text class="ts" x="250" y="78" text-anchor="middle" dominant-baseline="central">auth.log, syslog</text></g>
+  <g class="col-box"><rect x="328" y="44" width="116" height="44" rx="8" stroke-width="0.5"/>
+    <text class="th" x="386" y="62" text-anchor="middle" dominant-baseline="central">Firewall</text>
+    <text class="ts" x="386" y="78" text-anchor="middle" dominant-baseline="central">Network logs</text></g>
+  <g class="col-box"><rect x="464" y="44" width="116" height="44" rx="8" stroke-width="0.5"/>
+    <text class="th" x="522" y="62" text-anchor="middle" dominant-baseline="central">Endpoints</text>
+    <text class="ts" x="522" y="78" text-anchor="middle" dominant-baseline="central">EDR, FIM</text></g>
+
+  <!-- Arrows sources → agent -->
+  <line x1="114" y1="88" x2="114" y2="108" class="arr" marker-end="url(#arrow)"/>
+  <line x1="250" y1="88" x2="250" y2="108" class="arr" marker-end="url(#arrow)"/>
+  <line x1="386" y1="88" x2="386" y2="108" class="arr" marker-end="url(#arrow)"/>
+  <line x1="522" y1="88" x2="522" y2="108" class="arr" marker-end="url(#arrow)"/>
+
+  <!-- Wazuh Agent banner -->
+  <g class="agent"><rect x="56" y="108" width="524" height="26" rx="6" stroke-width="0.5"/>
+    <text class="th" x="318" y="121" text-anchor="middle" dominant-baseline="central">Wazuh Agent — installed on each host</text></g>
+
+  <!-- Arrow agent → manager -->
+  <line x1="318" y1="134" x2="318" y2="160" class="arr" marker-end="url(#arrow)"/>
+
+  <!-- ROW 2: Wazuh Manager -->
+  <g class="detect"><rect x="56" y="160" width="160" height="56" rx="8" stroke-width="0.5"/>
+    <text class="th" x="136" y="182" text-anchor="middle" dominant-baseline="central">Log Decoder</text>
+    <text class="ts" x="136" y="200" text-anchor="middle" dominant-baseline="central">Normalise events</text></g>
+  <line x1="216" y1="188" x2="244" y2="188" class="arr" marker-end="url(#arrow)"/>
+  <g class="detect"><rect x="244" y="160" width="160" height="56" rx="8" stroke-width="0.5"/>
+    <text class="th" x="324" y="182" text-anchor="middle" dominant-baseline="central">Rule Engine</text>
+    <text class="ts" x="324" y="200" text-anchor="middle" dominant-baseline="central">Correlate + detect</text></g>
+  <line x1="404" y1="188" x2="432" y2="188" class="arr" marker-end="url(#arrow)"/>
+  <g class="detect"><rect x="432" y="160" width="148" height="56" rx="8" stroke-width="0.5"/>
+    <text class="th" x="506" y="182" text-anchor="middle" dominant-baseline="central">Alert Queue</text>
+    <text class="ts" x="506" y="200" text-anchor="middle" dominant-baseline="central">→ OpenSearch</text></g>
+
+  <!-- Arrow manager → indexer -->
+  <line x1="318" y1="216" x2="318" y2="270" class="arr" marker-end="url(#arrow)"/>
+
+  <!-- ROW 3: Wazuh Indexer -->
+  <g class="store"><rect x="56" y="270" width="248" height="56" rx="8" stroke-width="0.5"/>
+    <text class="th" x="180" y="292" text-anchor="middle" dominant-baseline="central">wazuh-alerts-*</text>
+    <text class="ts" x="180" y="310" text-anchor="middle" dominant-baseline="central">Raw alert index</text></g>
+  <g class="store"><rect x="332" y="270" width="248" height="56" rx="8" stroke-width="0.5"/>
+    <text class="th" x="456" y="292" text-anchor="middle" dominant-baseline="central">wazuh-ai-enriched-*</text>
+    <text class="ts" x="456" y="310" text-anchor="middle" dominant-baseline="central">AI scored + LLM summary</text></g>
+
+  <!-- Arrow indexer → AI -->
+  <line x1="180" y1="326" x2="180" y2="400" class="arr" marker-end="url(#arrow)"/>
+
+  <!-- ROW 4: AI Microservice -->
+  <g class="ai"><rect x="56" y="400" width="128" height="56" rx="8" stroke-width="0.5"/>
+    <text class="th" x="120" y="422" text-anchor="middle" dominant-baseline="central">main.py</text>
+    <text class="ts" x="120" y="440" text-anchor="middle" dominant-baseline="central">FastAPI poller</text></g>
+  <line x1="184" y1="428" x2="208" y2="428" class="arr" marker-end="url(#arrow)"/>
+  <g class="ai"><rect x="208" y="400" width="128" height="56" rx="8" stroke-width="0.5"/>
+    <text class="th" x="272" y="422" text-anchor="middle" dominant-baseline="central">anomaly.py</text>
+    <text class="ts" x="272" y="440" text-anchor="middle" dominant-baseline="central">Isolation Forest</text></g>
+  <line x1="336" y1="428" x2="360" y2="428" class="arr" marker-end="url(#arrow)"/>
+  <g class="ai"><rect x="360" y="400" width="108" height="56" rx="8" stroke-width="0.5"/>
+    <text class="th" x="414" y="422" text-anchor="middle" dominant-baseline="central">ueba.py</text>
+    <text class="ts" x="414" y="440" text-anchor="middle" dominant-baseline="central">User baseline</text></g>
+  <line x1="468" y1="428" x2="492" y2="428" class="arr" marker-end="url(#arrow)"/>
+  <g class="ai"><rect x="492" y="400" width="128" height="56" rx="8" stroke-width="0.5"/>
+    <text class="th" x="556" y="422" text-anchor="middle" dominant-baseline="central">summarizer.py</text>
+    <text class="ts" x="556" y="440" text-anchor="middle" dominant-baseline="central">LLM + VirusTotal</text></g>
+
+  <!-- Arrow AI → enriched index -->
+  <line x1="456" y1="326" x2="540" y2="398" class="arr" marker-end="url(#arrow)"/>
+
+  <!-- Arrow indexer → dashboard -->
+  <line x1="318" y1="384" x2="318" y2="530" class="arr" marker-end="url(#arrow)"/>
+
+  <!-- ROW 5: Dashboard -->
+  <g class="dash"><rect x="56" y="530" width="128" height="56" rx="8" stroke-width="0.5"/>
+    <text class="th" x="120" y="552" text-anchor="middle" dominant-baseline="central">Alert queue</text>
+    <text class="ts" x="120" y="570" text-anchor="middle" dominant-baseline="central">UC-017</text></g>
+  <g class="dash"><rect x="204" y="530" width="128" height="56" rx="8" stroke-width="0.5"/>
+    <text class="th" x="268" y="552" text-anchor="middle" dominant-baseline="central">MITRE heatmap</text>
+    <text class="ts" x="268" y="570" text-anchor="middle" dominant-baseline="central">UC-018</text></g>
+  <g class="dash"><rect x="352" y="530" width="128" height="56" rx="8" stroke-width="0.5"/>
+    <text class="th" x="416" y="552" text-anchor="middle" dominant-baseline="central">Geo attack map</text>
+    <text class="ts" x="416" y="570" text-anchor="middle" dominant-baseline="central">UC-019</text></g>
+  <g class="dash"><rect x="500" y="530" width="108" height="56" rx="8" stroke-width="0.5"/>
+    <text class="th" x="554" y="552" text-anchor="middle" dominant-baseline="central">KPI panel</text>
+    <text class="ts" x="554" y="570" text-anchor="middle" dominant-baseline="central">UC-020</text></g>
+
+  <!-- Arrows dashboard → integrations -->
+  <line x1="150" y1="586" x2="150" y2="656" class="arr" marker-end="url(#arrow)"/>
+  <line x1="318" y1="586" x2="318" y2="656" class="arr" marker-end="url(#arrow)"/>
+  <line x1="486" y1="586" x2="486" y2="656" class="arr" marker-end="url(#arrow)"/>
+
+  <!-- ROW 6: Integrations -->
+  <g class="integ"><rect x="56" y="656" width="188" height="56" rx="8" stroke-width="0.5"/>
+    <text class="th" x="150" y="678" text-anchor="middle" dominant-baseline="central">TheHive</text>
+    <text class="ts" x="150" y="696" text-anchor="middle" dominant-baseline="central">Incident management</text></g>
+  <g class="integ"><rect x="264" y="656" width="108" height="56" rx="8" stroke-width="0.5"/>
+    <text class="th" x="318" y="678" text-anchor="middle" dominant-baseline="central">Shuffle</text>
+    <text class="ts" x="318" y="696" text-anchor="middle" dominant-baseline="central">SOAR automation</text></g>
+  <g class="integ"><rect x="392" y="656" width="188" height="56" rx="8" stroke-width="0.5"/>
+    <text class="th" x="486" y="678" text-anchor="middle" dominant-baseline="central">VirusTotal</text>
+    <text class="ts" x="486" y="696" text-anchor="middle" dominant-baseline="central">Threat intel enrichment</text></g>
+</svg>

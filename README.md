@@ -31,7 +31,9 @@ Unlike commercial SIEM solutions, this stack costs $0 in licensing and is fully 
 
 ## 🏗️ Architecture
 
-```
+![Architecture Diagram](diagrams/architecture.svg)
+
+<!-- ```
 Log Sources (endpoints, firewalls, cloud, apps)
         ↓
 Wazuh Agent  ──────────────────────────────────────
@@ -51,7 +53,7 @@ Integrations
   ├── TheHive      — incident case management
   ├── Shuffle      — SOAR automation
   └── VirusTotal   — threat intel enrichment
-```
+``` -->
 
 ---
 
