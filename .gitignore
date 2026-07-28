@@ -1,0 +1,4 @@
+.env
+.env.*
+wazuh-certificates/
+config/wazuh_indexer_ssl_certs/
