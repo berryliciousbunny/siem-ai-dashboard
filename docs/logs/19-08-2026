@@ -1,0 +1,11 @@
+- fixed & connected to wazuh dashboard
+- add inbound & outbound connection
+- check if connected to port 1514, 1515 -> forward to port WSL2
+# Forward Windows port 1514 → WSL2 port 1514
+# Forward Windows port 1515 → WSL2 port 1515  
+- blocked at socket level
+# netsh interface portproxy show all
+# Test-NetConnection -ComputerName . . . . -Port 1514 
+- note computer ip -> change connection to current ip
+- reached manager but getting an SSL error.
+(regenerate cert + IP SAN)
