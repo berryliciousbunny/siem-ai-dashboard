@@ -1,0 +1,81 @@
+## Step 1 — Create the portproxy script
+
+Open PowerShell as Administrator and run:
+
+```powershell
+notepad C:\wsl-portproxy.ps1
+```
+
+Paste this in:
+
+```powershell
+# Wait for WSL2 to fully start
+Start-Sleep -Seconds 10
+
+# Get current WSL2 IP
+$wslIP = (wsl hostname -I).Trim().Split(" ")[0]
+
+# Remove old rules
+netsh interface portproxy delete v4tov4 listenport=1514 listenaddress=0.0.0.0
+netsh interface portproxy delete v4tov4 listenport=1515 listenaddress=0.0.0.0
+
+# Add new rules with current WSL2 IP
+netsh interface portproxy add v4tov4 listenport=1514 listenaddress=0.0.0.0 connectport=1514 connectaddress=$wslIP
+netsh interface portproxy add v4tov4 listenport=1515 listenaddress=0.0.0.0 connectport=1515 connectaddress=$wslIP
+```
+
+Save and close.
+
+---
+
+## Step 2 — Create the scheduled task
+
+```powershell
+$action = New-ScheduledTaskAction `
+    -Execute "PowerShell.exe" `
+    -Argument "-ExecutionPolicy Bypass -File C:\wsl-portproxy.ps1"
+
+$trigger = New-ScheduledTaskTrigger -AtStartup
+
+$settings = New-ScheduledTaskSettingsSet `
+    -AllowStartIfOnBatteries `
+    -DontStopIfGoingOnBatteries
+
+Register-ScheduledTask `
+    -TaskName "WSL2PortProxy" `
+    -Action $action `
+    -Trigger $trigger `
+    -Settings $settings `
+    -RunLevel Highest `
+    -Force
+```
+
+---
+
+## Step 3 — Verify it was created
+
+```powershell
+Get-ScheduledTask -TaskName "WSL2PortProxy"
+```
+
+Should show `Ready` status.
+
+---
+
+## Step 4 — Test it manually right now
+
+```powershell
+Start-ScheduledTask -TaskName "WSL2PortProxy"
+```
+
+Wait 15 seconds then check:
+
+```powershell
+netsh interface portproxy show all
+```
+
+Should show both port 1514 and 1515 rules with your current WSL2 IP.
+
+---
+
+From now on every time Laptop B restarts, the portproxy rules automatically restore themselves within 10 seconds of Windows starting up. 

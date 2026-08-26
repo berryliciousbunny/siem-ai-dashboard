@@ -9,3 +9,4 @@
 - note computer ip -> change connection to current ip
 - reached manager but getting an SSL error.
 (regenerate cert + IP SAN)
+- FIXED: dev error (turned on VPN), deployed agent successfully

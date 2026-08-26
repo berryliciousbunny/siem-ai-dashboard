@@ -1,0 +1,3 @@
+reinstalling agent - unable to connect to ip
+updates: assign agent with wsl2 ip (temporarly) if unable to connect ip
+next: check data flowing onto dashboard

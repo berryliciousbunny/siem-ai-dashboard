@@ -1,0 +1,8 @@
+fix: data not flowing on dashboard
+docker exec -it single-node-wazuh.manager bash -c "curl -k -u admin:SecretPassword https://wazuh.indexer:9200/wazuh-alerts-*/_count"
+returns count == 0
+check filebeat: docker exec -it single-node-wazuh.manager bash -c "filebeat test output"
+note: fix demo.indexer to wazuh.indexer
+check: windows side file openssl git: & "C:\Program Files\Git\usr\bin\openssl.exe" x509 -in "config\wazuh_indexer_ssl_certs\wazuh.indexer.pem" -noout -subject
+check: correct cert load
+-> next: force indexer to reload correct cert
