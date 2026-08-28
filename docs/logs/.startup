@@ -1,0 +1,254 @@
+## Phase 0 — Pre-flight (do this ONCE before anything else)
+
+- [ ] **VPN is OFF** and stays off for the entire setup
+- [ ] Set a **static IP** on Laptop B so it never changes again:
+  - Settings → Network & Internet → Wi-Fi → Properties → IP Settings → Edit → Manual
+  - IP: `192.168.1.10` / Subnet: `255.255.255.0` / Gateway: `192.168.1.1` / DNS: `8.8.8.8`
+- [ ] Confirm it took effect:
+  ```powershell
+  ipconfig | findstr "IPv4"
+  ```
+  Should show `192.168.1.9`
+
+---
+
+## Phase 1 — Full wipe
+
+```powershell
+cd C:\Users\caoli\Documents\.Projects\.75-DAY-CHALLENGE\SIEM_SOC_AI_TOOL\wazuh-docker\single-node
+docker compose down -v
+docker system prune -a --volumes -f
+```
+
+- [ ] `docker ps -a` returns nothing
+- [ ] `docker volume ls` returns nothing related to wazuh
+
+---
+
+## Phase 2 — Fix certs.yml BEFORE generating anything
+
+```powershell
+notepad config\certs.yml
+```
+
+Paste exactly this (note the `ip2` on the server node — this is what let agents
+register by IP later):
+
+```yaml
+# note: changed all ip to 192.168.1.9
+nodes:
+  indexer:
+    - name: wazuh.indexer
+      ip: 127.0.0.1
+  server:
+    - name: wazuh.manager
+      ip: 127.0.0.1
+      ip2: 192.168.1.10
+  dashboard:
+    - name: wazuh.dashboard
+      ip: 127.0.0.1
+```
+
+- [ ] Saved and closed
+
+---
+
+## Phase 3 — Generate certs (run PowerShell as Administrator)
+
+```powershell
+docker compose -f generate-indexer-certs.yml run --rm generator
+```
+
+- [ ] Output ends with all 4 "certificates created" lines
+- [ ] Verify names are correct (NOT `demo.*`):
+  ```powershell
+  ls config\wazuh_indexer_ssl_certs\
+  ```
+  Should show `wazuh.indexer.pem`, `wazuh.manager.pem`, `wazuh.dashboard.pem`, `admin.pem`, `root-ca.pem` (+ `-key.pem` versions)
+
+  if permission issue:
+  ```powershell
+  # Delete the folder entirely
+  Remove-Item -Recurse -Force config\wazuh_indexer_ssl_certs
+  # Recreate it fresh
+  New-Item -ItemType Directory -Force -Path "config\wazuh_indexer_ssl_certs"
+  ```
+- [ ] Verify the manager cert has the IP SAN:
+  ```powershell
+  & "C:\Program Files\Git\usr\bin\openssl.exe" x509 -in "config\wazuh_indexer_ssl_certs\wazuh.manager.pem" -noout -text | findstr "IP Address"
+  ```
+  Should show both `192.168.1.9`
+- [ ] Verify the indexer cert CN is correct:
+  ```powershell
+  & "C:\Program Files\Git\usr\bin\openssl.exe" x509 -in "config\wazuh_indexer_ssl_certs\wazuh.indexer.pem" -noout -subject
+  ```
+  Should show `CN=wazuh.indexer` (not `demo.indexer`)
+
+**Do not proceed until both cert checks above pass.**
+
+---
+
+## Phase 4 — Copy certs into place
+
+```powershell
+New-Item -ItemType Directory -Force -Path "config\certs"
+New-Item -ItemType Directory -Force -Path "config\wazuh_manager\certs"
+New-Item -ItemType Directory -Force -Path "config\wazuh_indexer\certs"
+New-Item -ItemType Directory -Force -Path "config\wazuh_dashboard\certs"
+
+Copy-Item "config\wazuh_indexer_ssl_certs\root-ca.pem" "config\certs\root-ca.pem" -Force
+
+Copy-Item "config\wazuh_indexer_ssl_certs\wazuh.manager.pem" "config\wazuh_manager\certs\wazuh.manager.pem" -Force
+Copy-Item "config\wazuh_indexer_ssl_certs\wazuh.manager-key.pem" "config\wazuh_manager\certs\wazuh.manager-key.pem" -Force
+
+Copy-Item "config\wazuh_indexer_ssl_certs\wazuh.indexer.pem" "config\wazuh_indexer\certs\wazuh.indexer.pem" -Force
+Copy-Item "config\wazuh_indexer_ssl_certs\wazuh.indexer-key.pem" "config\wazuh_indexer\certs\wazuh.indexer-key.pem" -Force
+Copy-Item "config\wazuh_indexer_ssl_certs\admin.pem" "config\wazuh_indexer\certs\admin.pem" -Force
+Copy-Item "config\wazuh_indexer_ssl_certs\admin-key.pem" "config\wazuh_indexer\certs\admin-key.pem" -Force
+
+Copy-Item "config\wazuh_indexer_ssl_certs\wazuh.dashboard.pem" "config\wazuh_dashboard\certs\wazuh.dashboard.pem" -Force
+Copy-Item "config\wazuh_indexer_ssl_certs\wazuh.dashboard-key.pem" "config\wazuh_dashboard\certs\wazuh.dashboard-key.pem" -Force
+Copy-Item "config\wazuh_indexer_ssl_certs\root-ca.pem" "config\wazuh_dashboard\certs\root-ca.pem" -Force
+```
+
+- [ ] Verify every file is a real file (Length > 0, not a directory):
+  ```powershell
+  Get-ChildItem config\certs\, config\wazuh_manager\certs\, config\wazuh_indexer\certs\, config\wazuh_dashboard\certs\ | Select-Object Name, Mode, Length
+  ```
+  Every `Mode` should start with `-`, every `Length` > 0
+
+**Do not proceed until every single cert file passes this check.**
+
+---
+
+## Phase 5 — Start the stack
+
+```powershell
+docker compose up -d
+```
+
+- [ ] `docker compose ps` shows all 3 containers as `Up`
+
+Open a second PowerShell window and watch the indexer:
+```powershell
+docker logs single-node-wazuh.indexer -f --tail 5
+```
+
+- [ ] Wait until you see repeating `.opendistro_security` errors (this means it's up and waiting — expected)
+
+---
+
+## Phase 6 — Initialize security index
+
+The moment you see the repeating errors above, run this in the FIRST window:
+
+```powershell
+docker exec -it single-node-wazuh.indexer bash -c "export JAVA_HOME=/usr/share/wazuh-indexer/jdk && bash /usr/share/wazuh-indexer/plugins/opensearch-security/tools/securityadmin.sh -cd /usr/share/wazuh-indexer/opensearch-security/ -nhnv -cacert /usr/share/wazuh-indexer/certs/root-ca.pem -cert /usr/share/wazuh-indexer/certs/admin.pem -key /usr/share/wazuh-indexer/certs/admin-key.pem -p 9200 -icl"
+```
+
+- [ ] Output ends with `Done with success`
+
+---
+
+## Phase 7 — Verify no more cert mismatch
+
+```powershell
+docker logs single-node-wazuh.manager --tail 15
+```
+
+- [ ] **No** `x509: certificate is valid for demo.indexer` errors
+- [ ] Check data is actually flowing:
+  ```powershell
+  docker exec -it single-node-wazuh.manager bash -c "curl -k -u admin:SecretPassword https://wazuh.indexer:9200/wazuh-alerts-*/_count"
+
+  # Check Filebeat
+  docker exec -it single-node-wazuh.manager bash -c "filebeat test output"
+  ```
+  (If `curl: command not found`, that's fine — skip this specific check and rely on the dashboard instead)
+
+**If you still see `demo.indexer` here, STOP. Do not continue to agents.**
+Go back to Phase 3 and re-check the cert CN — something didn't regenerate.
+
+---
+
+## Phase 8 — Dashboard check
+
+```
+https://localhost
+```
+
+- [ ] SSL warning → Advanced → Proceed
+- [ ] Login with `admin` / `SecretPassword` (or whatever is in `docker-compose.yml`)
+- [ ] Dashboard loads without "No API available to connect"
+- [ ] No "Saved object for index pattern not found" errors
+
+---
+
+## Phase 9 — Set up the portproxy scheduled task (ONE TIME, before any agent)
+
+```powershell
+notepad C:\wsl-portproxy.ps1
+```
+
+Paste:
+```powershell
+Start-Sleep -Seconds 10
+$wslIP = (wsl hostname -I).Trim().Split(" ")[0]
+netsh interface portproxy delete v4tov4 listenport=1514 listenaddress=0.0.0.0
+netsh interface portproxy delete v4tov4 listenport=1515 listenaddress=0.0.0.0
+netsh interface portproxy add v4tov4 listenport=1514 listenaddress=0.0.0.0 connectport=1514 connectaddress=$wslIP
+netsh interface portproxy add v4tov4 listenport=1515 listenaddress=0.0.0.0 connectport=1515 connectaddress=$wslIP
+```
+
+Register the task:
+```powershell
+$action = New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument "-ExecutionPolicy Bypass -File C:\wsl-portproxy.ps1"
+$trigger = New-ScheduledTaskTrigger -AtStartup
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
+Register-ScheduledTask -TaskName "WSL2PortProxy" -Action $action -Trigger $trigger -Settings $settings -RunLevel Highest -Force
+```
+
+Run it once now manually so it's active immediately:
+```powershell
+Start-ScheduledTask -TaskName "WSL2PortProxy"
+Start-Sleep -Seconds 15
+netsh interface portproxy show all
+```
+
+- [ ] Shows rules for both 1514 and 1515 pointing at current WSL2 IP
+
+---
+
+## Phase 10 — Add the Windows agent
+
+1. Dashboard → **Agents → Deploy new agent**
+2. OS: **Windows**
+3. Server address: `192.168.1.10`
+4. Agent name: `laptop-b-windows`
+5. Copy the generated install command
+
+Run in PowerShell **as Administrator**:
+- [ ] Paste and run the install command
+- [ ] `NET START WazuhSvc`
+- [ ] Confirm VPN is still off
+
+Check the log:
+```powershell
+type "C:\Program Files (x86)\ossec-agent\ossec.log" | Select-Object -Last 10
+```
+
+- [ ] No `SSL error (5)` or `(1208)` errors
+- [ ] Shows `Started (pid: ...)` and log analysis lines
+
+Check dashboard: **Wazuh → Agents**
+- [ ] Agent shows **Active** with a green dot
+
+---
+
+## Golden rules to avoid redoing all of this again
+
+1. **Never** run `docker compose down -v` unless you intend a full wipe — it deletes agent registrations and the security index. Plain `docker compose down` is safe.
+2. **VPN off** before touching agents, every single time.
+3. If Laptop B restarts, the portproxy scheduled task handles itself — no manual steps needed.
+4. If you ever see `certificate is valid for demo.indexer` again, it means a volume somewhere still has the old cert cached — remove the specific volume (`docker volume rm single-node_wazuh-indexer-data`) and restart, don't just regenerate certs on disk.
+5. Static IP on Laptop B means the agent config and portproxy rules never need to change again.

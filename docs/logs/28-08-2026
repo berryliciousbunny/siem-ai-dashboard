@@ -1,0 +1,4 @@
+fix:    
+docker-compose.yml: add wazuh.indexer alias demo.indexer (as default cert gen for demo.indexer)
+config.yml: fix ip to host machine ip for docker containers communication
+next: continue debug -> goal: filebeat test output connect 
