@@ -1,0 +1,8 @@
+docker exec -it single-node-wazuh.manager bash -c "filebeat test output"                       elasticsearch: https://demo.indexer:9200...                                                                               parse url... OK                                                                                                         connection...                                                                                                             parse host... OK                                                                                                        dns lookup... OK                                                                                                        addresses: 172.18.0.2                                                                                                   dial up... OK                                                                                                         TLS...                                                                                                                    security: server's certificate chain verification is enabled                                                            handshake... ERROR x509: certificate signed by unknown authority
+
+find / -type f \( -name "*.pem" -o -name "*.crt" \) 2>/dev/null
+find / -type f -name "filebeat.yml" 2>/dev/null
+find / -type f -name "*.yml" 2>/dev/null | grep -E "filebeat|wazuh"
+
+filebeat export config | grep -i -A10 -B5 "output.elasticsearch"
+grep -Rni "demo.indexer\|certificate_authorit\|ssl" /etc/filebeat /usr/share/filebeat 2>/dev/null
