@@ -35,18 +35,23 @@ Paste exactly this (note the `ip2` on the server node — this is what let agent
 register by IP later):
 
 ```yaml
-# note: changed all ip to 192.168.1.9
+# note: changed all ip to 192.168.1.14
 nodes:
+  # Wazuh indexer server nodes
   indexer:
     - name: wazuh.indexer
-      ip: 127.0.0.1
+      ip: 192.168.1.14
+
+  # Wazuh server nodes
+  # Use node_type only with more than one Wazuh manager
   server:
     - name: wazuh.manager
-      ip: 127.0.0.1
-      ip2: 192.168.1.10
+      ip: 192.168.1.14
+
+  # Wazuh dashboard node
   dashboard:
     - name: wazuh.dashboard
-      ip: 127.0.0.1
+      ip: 192.168.1.14
 ```
 
 - [ ] Saved and closed
@@ -85,6 +90,8 @@ docker compose -f generate-indexer-certs.yml run --rm generator
   Should show `CN=wazuh.indexer` (not `demo.indexer`)
 
 **Do not proceed until both cert checks above pass.**
+
+IF CERTS GENERATE WRONG, FOLLOW PHASE 4. IF NOT SKIP TO PHASE 5
 
 ---
 
@@ -136,6 +143,11 @@ docker logs single-node-wazuh.indexer -f --tail 5
 
 - [ ] Wait until you see repeating `.opendistro_security` errors (this means it's up and waiting — expected)
 
+if need debugging: find opensearch
+```powershell
+docker compose exec wazuh.manager sh -c 'find /var/ossec -type f \( -name "*.pem" -o -name "*.key" \) -ls'
+docker compose exec wazuh.manager sh -c 'find / -type f \( -name "*.pem" -o -name "*.key" \) 2>/dev/null'
+```
 ---
 
 ## Phase 6 — Initialize security index

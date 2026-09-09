@@ -1,1 +1,7 @@
 goal: review cert generation & signage
+-> docker version: 4.1.17
+edit: wsl 2 w .wslconfig 
+[wsl2]
+memory=8GB
+processors=4
+swap=4GB

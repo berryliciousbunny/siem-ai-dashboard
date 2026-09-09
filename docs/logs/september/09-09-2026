@@ -1,0 +1,30 @@
+today: fixed certs.yml . remember to not set the ip to container name...
+set fixed ip on host computer
+UPDATE: FIXED THE DAMN THING
+all dashboard, indexer, manager ran perfectly
+installed an agent on wazuh dashboard, check if data flows in
+
+update: 
+Windows Event Viewer       ✅
+        ↓
+Wazuh Agent config         ✅
+        ↓
+Wazuh Agent online         ✅
+        ↓
+Wazuh Manager              ?
+        ↓
+Indexer                    ❌ suspicious
+        ↓
+Threat Hunting             ❌ no event
+
+log: Failed to connect to https://wazuh.indexer:9200
+x509: certificate is not valid for any names,
+but wanted to match wazuh.indexer
+
+checking conflict: connecting to:
+https://wazuh.indexer:9200
+
+but the Indexer certificate has:
+SAN:
+IP Address: 192.168.1.14
+
