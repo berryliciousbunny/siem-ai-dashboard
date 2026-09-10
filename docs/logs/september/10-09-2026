@@ -1,0 +1,78 @@
+# Connect log sources: syslog, Windows Event Log, auth logs
+i learnt new things abt logs!
+
+## Windows Event Log ✅ (already connected)
+
+Windows' built-in logging system — every significant thing that happens on the OS gets recorded here in three main channels:
+
+| Channel | What it logs |
+|---|---|
+| **Application** | App crashes, app-level errors/warnings |
+| **Security** | Logins, logouts, failed passwords, privilege changes |
+| **System** | Driver issues, service start/stop, hardware events |
+
+### How to check it yourself (outside Wazuh)
+
+```powershell
+# Open the built-in Event Viewer GUI
+eventvwr.msc
+```
+
+Or from PowerShell directly:
+```powershell
+# Last 10 Security events
+Get-WinEvent -LogName Security -MaxEvents 10
+
+# Last 10 System events
+Get-WinEvent -LogName System -MaxEvents 10
+```
+
+### How to check what Wazuh is reading
+
+```powershell
+type "C:\Program Files (x86)\ossec-agent\ossec.log" | findstr "event log"
+```
+
+This confirms the agent is actively watching those 3 channels — which we already saw is working.
+
+---
+
+## Syslog (Linux-only concept)
+
+Linux's equivalent of Windows Event Log — a standard logging protocol/format most Linux services write to. Doesn't exist natively on Windows.
+
+Typical file location on Linux:
+```bash
+/var/log/syslog        # Debian/Ubuntu
+/var/log/messages      # RedHat/CentOS
+```
+
+Contains things like: service starts/stops, kernel messages, cron job runs, general system activity.
+
+---
+
+## Auth log (also Linux-only)
+
+A **subset** of syslog specifically for authentication events — SSH logins, sudo usage, password changes.
+
+Typical file location:
+```bash
+/var/log/auth.log      # Debian/Ubuntu
+/var/log/secure        # RedHat/CentOS
+```
+
+This is basically Linux's version of the Windows **Security** event log — same purpose, different OS.
+
+---
+
+## Why the checklist mentions both
+
+Because a real-world SOC monitors a **mixed environment** — some Windows machines, some Linux servers. The use case doc we wrote earlier (UC-001 brute force, UC-002 off-hours login, etc.) draws examples from both `auth.log` (Linux) and Windows Event Log depending on which OS the alert applies to.
+
+---
+
+## Bottom line for your PoC right now
+
+Since Laptop B is Windows-only, you've already satisfied the Windows Event Log portion. Syslog and auth log require a Linux machine — which is optional unless you want full cross-platform coverage for the demo video later.
+
+-> I will try setup a Linux Machine later n see if Wazuh captures data.
