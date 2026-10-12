@@ -1,0 +1,14 @@
+<group name="local,windows,authentication,">
+
+  <!-- UC-002: Off-hours login alert (outside 8am-7pm window) -->
+  <rule id="100002" level="7">
+    <if_sid>60106</if_sid>
+    <time>19:00 - 08:00</time>
+    <description>Successful login detected outside business hours (7pm-8am)</description>
+    <mitre>
+      <id>T1078</id>
+    </mitre>
+    <group>authentication_success,off_hours,</group>
+  </rule>
+
+</group>

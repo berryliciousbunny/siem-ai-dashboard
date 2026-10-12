@@ -1,0 +1,37 @@
+<group name="local,windows,lateral_movement,">
+
+  <!-- UC-004a: RDP logon from an internal host (logon type 10) -->
+  <rule id="100006" level="8">
+    <if_sid>60106</if_sid>
+    <field name="win.eventdata.logonType">^10$</field>
+    <description>RDP logon detected — review source for lateral movement</description>
+    <mitre>
+      <id>T1021.001</id>
+    </mitre>
+    <group>lateral_movement,remote_desktop,</group>
+  </rule>
+
+  <!-- UC-004b: Multiple RDP logons to different hosts in a short window
+       (requires this rule to be aggregated at the Manager level across
+       agents — see note below) -->
+  <rule id="100007" level="12" frequency="3" timeframe="300">
+    <if_matched_sid>100006</if_matched_sid>
+    <description>Multiple RDP connections to different hosts in 5 minutes — possible lateral movement</description>
+    <mitre>
+      <id>T1021.001</id>
+    </mitre>
+    <group>lateral_movement,remote_desktop,pci_dss_10.2.5,</group>
+  </rule>
+
+  <!-- UC-004c: SMB share access from non-admin context -->
+  <rule id="100008" level="7">
+    <if_sid>60106</if_sid>
+    <field name="win.eventdata.logonType">^3$</field>
+    <description>Network logon (SMB) detected — review for unauthorized lateral movement</description>
+    <mitre>
+      <id>T1021.002</id>
+    </mitre>
+    <group>lateral_movement,smb,</group>
+  </rule>
+
+</group>

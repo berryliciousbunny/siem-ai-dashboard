@@ -1,0 +1,31 @@
+<group name="local,windows,syscheck,ransomware,">
+
+  <!-- UC-005a: Baseline — any FIM change event (parent for frequency rule below) -->
+  <rule id="100009" level="0">
+    <if_sid>550</if_sid>
+    <description>File integrity monitoring change detected</description>
+    <group>fim_baseline,</group>
+  </rule>
+
+  <!-- UC-005b: Mass file modification in short window — possible ransomware encryption -->
+  <rule id="100010" level="13" frequency="20" timeframe="30">
+    <if_matched_sid>100009</if_matched_sid>
+    <description>Mass file modification detected (20+ changes in 30s) — possible ransomware activity</description>
+    <mitre>
+      <id>T1486</id>
+    </mitre>
+    <group>ransomware,fim,pci_dss_11.5,</group>
+  </rule>
+
+  <!-- UC-005c: Suspicious ransomware-associated file extensions -->
+  <rule id="100011" level="14">
+    <if_sid>550</if_sid>
+    <field name="file" type="pcre2">(?i)\.(locked|encrypted|crypt|enc|wncry|locky)$</field>
+    <description>File renamed with known ransomware extension — high confidence ransomware activity</description>
+    <mitre>
+      <id>T1486</id>
+    </mitre>
+    <group>ransomware,fim,critical,</group>
+  </rule>
+
+</group>

@@ -1,0 +1,14 @@
+<group name="local,windows,data_exfil,">
+
+  <!-- UC-006: Data exfiltration via large outbound transfer -->
+  <rule id="100012" level="11">
+    <if_sid>65000</if_sid>
+    <field name="win.eventdata.direction">Outbound</field>
+    <description>Large outbound data transfer detected — possible data exfiltration</description>
+    <mitre>
+      <id>T1041</id>
+    </mitre>
+    <group>data_exfiltration,network,pci_dss_10.2.4,</group>
+  </rule>
+
+</group>

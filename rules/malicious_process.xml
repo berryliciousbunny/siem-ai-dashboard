@@ -1,0 +1,37 @@
+<group name="local,windows,malicious_process,">
+
+  <!-- UC-007a: Suspicious parent-child process chain (Office spawning shell) -->
+  <rule id="100013" level="12">
+    <if_sid>61603</if_sid>
+    <field name="win.eventdata.parentImage" type="pcre2">(?i)(winword|excel|powerpnt|outlook)\.exe$</field>
+    <field name="win.eventdata.image" type="pcre2">(?i)(powershell|cmd|wscript|cscript)\.exe$</field>
+    <description>Office application spawned a shell process — possible macro-based malware execution</description>
+    <mitre>
+      <id>T1059</id>
+    </mitre>
+    <group>malicious_process,living_off_the_land,</group>
+  </rule>
+
+  <!-- UC-007b: Encoded/obfuscated PowerShell execution -->
+  <rule id="100014" level="12">
+    <if_sid>91802</if_sid>
+    <field name="win.eventdata.scriptBlockText" type="pcre2">(?i)(-enc|-encodedcommand|downloadstring|invoke-expression|iex)</field>
+    <description>Obfuscated or encoded PowerShell command executed</description>
+    <mitre>
+      <id>T1027</id>
+    </mitre>
+    <group>malicious_process,powershell,obfuscation,</group>
+  </rule>
+
+  <!-- UC-007c: Process execution from a temp/download directory -->
+  <rule id="100015" level="10">
+    <if_sid>61603</if_sid>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\(temp|downloads|appdata\\local\\temp)\\.*\.exe$</field>
+    <description>Executable launched from a temp or downloads directory — possible malware execution</description>
+    <mitre>
+      <id>T1059</id>
+    </mitre>
+    <group>malicious_process,suspicious_path,</group>
+  </rule>
+
+</group>

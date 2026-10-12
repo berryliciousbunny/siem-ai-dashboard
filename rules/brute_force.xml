@@ -1,0 +1,24 @@
+<group name="local,syslog,sshd,">
+
+  <!-- UC-001: Brute force SSH login detection -->
+  <rule id="100001" level="10" frequency="3" timeframe="60">
+    <if_matched_sid>5716</if_matched_sid>
+    <description>Brute force attack detected: 3+ SSH auth failures from same source in 60 seconds</description>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+    <group>authentication_failed,brute_force,pci_dss_10.2.4,pci_dss_10.2.5,</group>
+  </rule>
+
+  <!-- UC-023: MFA / 2FA failure detection -->
+  <rule id="100023" level="9" frequency="3" timeframe="300">
+    <if_matched_sid>5716</if_matched_sid>
+    <match>MFA</match>
+    <description>Repeated MFA failures — possible MFA fatigue attack</description>
+    <mitre>
+      <id>T1110.001</id>
+    </mitre>
+    <group>authentication_failed,mfa_fatigue,</group>
+  </rule>
+
+</group>
