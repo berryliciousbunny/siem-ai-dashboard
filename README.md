@@ -1,7 +1,8 @@
 # 🛡️ siem-ai-dashboard
 
-> An AI-powered, open-source SIEM dashboard for SOC teams -
-> built on Wazuh, enriched with ML anomaly detection and LLM alert summarisation.
+> An AI-powered, open-source SIEM dashboard for SOC teams —
+> built on Wazuh, enriched with local ML anomaly detection and a
+> self-hosted LLM explanation layer.
 
 ![Status](https://img.shields.io/badge/status-in%20development-orange)
 ![License](https://img.shields.io/badge/license-MIT-blue)
@@ -12,18 +13,18 @@
 
 ## 📌 Overview
 
-**siem-ai-dashboard** is a proof-of-concept AI-enhanced Security Information and Event Management (SIEM) system built entirely on open-source tools. It extends Wazuh's native threat detection capabilities with a custom Python AI layer that scores alerts for anomalies, profiles user behaviour, and generates plain-English summaries for SOC analysts - reducing triage time and alert fatigue.
+**siem-ai-dashboard** is a proof-of-concept AI-enhanced Security Information and Event Management (SIEM) system built entirely on open-source tools. It extends Wazuh's native threat detection capabilities with a Python AI pipeline that scores alerts for anomalies, profiles user behaviour, sanitizes every alert before it reaches a language model, and generates plain-English explanations for SOC analysts — using a **self-hosted local model by default**, with a cloud provider available only as an explicit opt-in.
 
-Unlike commercial SIEM solutions, this stack costs $0 in licensing and is fully customisable. It is designed for SOC teams, security engineers, and students who want a production-grade detection and response workflow without vendor lock-in.
+Unlike commercial SIEM solutions, this stack costs $0 in licensing and is fully customisable. It is designed for SOC teams, security engineers, and students who want a production-grade detection and response workflow without vendor lock-in — and without sending security telemetry to a third party by default.
 
 ---
 
 ## 🎯 Goals
 
-1. ✅ Reduce alert fatigue for L1 analysts via AI-driven severity scoring
-2. ✅ Surface plain-English alert summaries using LLMs (Claude / OpenAI)
+1. ✅ Reduce alert fatigue for L1 analysts via an independent anomaly-score signal
+2. ✅ Surface plain-English alert explanations using a local LLM — no data leaves the network by default
 3. ✅ Detect common attack patterns mapped to MITRE ATT&CK framework
-4. ✅ Automate tier-1 response actions - IP blocking, incident ticket creation
+4. ✅ Automate tier-1 response actions via fixed policy rules — never decided by the AI itself
 5. ✅ Enrich alerts automatically with threat intelligence (VirusTotal, GeoIP)
 6. ✅ Provide a fully open-source, zero-cost alternative to commercial SIEMs
 
@@ -33,27 +34,25 @@ Unlike commercial SIEM solutions, this stack costs $0 in licensing and is fully 
 
 ![Architecture Diagram](diagrams/architecture.svg)
 
-<!-- ```
-Log Sources (endpoints, firewalls, cloud, apps)
-        ↓
-Wazuh Agent  ──────────────────────────────────────
-        ↓                                          │
-Wazuh Manager (correlation + rule engine)          │
-        ↓                                          │
-Wazuh Indexer - OpenSearch (log storage)           │
-        ↓                                          │
-Python AI Microservice (FastAPI)                   │
-  ├── Isolation Forest - anomaly scoring           │
-  ├── UEBA - user behaviour baseline               │
-  └── LLM Summariser - plain-English alerts        │
-        ↓                                          │
-Custom OpenSearch Dashboard (SOC UI)  ─────────────
-        ↓
-Integrations
-  ├── TheHive      - incident case management
-  ├── Shuffle      - SOAR automation
-  └── VirusTotal   - threat intel enrichment
-``` -->
+The system runs a staged AI pipeline — anomaly scoring, behavioural analysis, sanitization, then a local-by-default LLM explanation — kept strictly separate from the response layer. Automated actions (IP blocking, ticket creation) fire from fixed policy rules, never from the AI's own output. Full detail, including the design principles behind this separation, is in [`docs/02-architecture.md`](docs/02-architecture.md).
+
+```
+Log Sources → Wazuh Agent → Wazuh Manager → Wazuh Indexer
+                                                  │
+                              ┌───────────────────┴───────────────────┐
+                              ▼                                       │
+                    AI Pipeline (Python)                              │
+                    Anomaly → UEBA → Sanitize → Local LLM (default)   │
+                              │                                       │
+                              └───────────────────┬───────────────────┘
+                                                  ▼
+                                    OpenSearch Dashboard
+                                                  │
+                              ┌───────────────────┴───────────────────┐
+                              ▼                                       ▼
+                    Policy-Driven Response                    Analyst Review
+                    TheHive · Shuffle · Active Response
+```
 
 ---
 
@@ -62,21 +61,22 @@ Integrations
 | Layer | Tools |
 |---|---|
 | **SIEM Core** | Wazuh, OpenSearch, OpenSearch Dashboards |
-| **AI / ML** | Python 3.11, scikit-learn, FastAPI, Claude API / OpenAI API |
+| **AI / ML** | Python 3.11, scikit-learn, FastAPI, Ollama (local, default) |
+| **LLM (optional)** | Claude API / OpenAI API — opt-in upgrade path, off by default |
 | **SOC Workflow** | TheHive, Shuffle SOAR, VirusTotal API |
-| **Infra** | Docker Compose, Ubuntu 22.04 |
+| **Infra** | Docker Compose, Ubuntu 22.04 / WSL2 |
 | **Testing** | Atomic Red Team, Caldera |
-| **Docs** | Markdown, Excalidraw |
+| **Docs** | Markdown, SVG diagrams |
 
 ---
 
-## ✅ Use Cases (20 total)
+## ✅ Use Cases (24 total)
 
 | Category | Examples |
 |---|---|
 | 🔴 Threat detection | Brute force, lateral movement, privilege escalation, ransomware FIM, data exfil |
 | 🟡 AI anomaly detection | Unusual login time, abnormal data volume, new device/IP per user |
-| 🟢 SOC automation | Auto incident ticket, LLM alert summary, auto IP block, hash lookup |
+| 🟢 SOC automation | Auto incident ticket, LLM alert explanation, auto IP block, hash lookup |
 | 🔵 Dashboard visibility | Real-time alert queue, MITRE heatmap, geo attack map, analyst KPIs |
 
 → Full list in [`docs/03-use-cases.md`](docs/03-use-cases.md)
@@ -87,12 +87,14 @@ Integrations
 
 ### Requirements
 
-| Spec | Minimum | Recommended |
+| Spec | Minimum (Core SIEM) | Recommended (Full stack incl. local LLM) |
 |---|---|---|
-| RAM | 8 GB (Wazuh only) | 16 GB (full stack) |
-| Disk | 60 GB free | 80 GB |
+| RAM | 8 GB | 16 GB+ |
+| Disk | 60 GB free | 80 GB+ (add ~4–5 GB for a local model) |
 | OS | Ubuntu 22.04 / WSL2 | Ubuntu 22.04 |
 | Docker | 24.0+ | latest |
+
+See [`docs/02-architecture.md`](docs/02-architecture.md#infrastructure-requirements) for the full RAM breakdown — running Core SIEM and the local LLM together on 16 GB is workable but tight.
 
 ### 1. Clone the repo
 
@@ -107,11 +109,19 @@ cd siem-ai-dashboard
 cp .env.example .env
 ```
 
-Open `.env` and fill in your API keys:
+Open `.env` and configure:
 
 ```env
-OPENAI_API_KEY=your_key_here        # or ANTHROPIC_API_KEY
-VIRUSTOTAL_API_KEY=your_key_here
+# LLM provider — local by default, nothing leaves your network
+LLM_PROVIDER=ollama
+OLLAMA_MODEL=mistral
+OLLAMA_URL=http://localhost:11434
+
+# Optional: switch to a cloud provider instead (opt-in)
+# LLM_PROVIDER=anthropic
+# ANTHROPIC_API_KEY=your_key_here
+
+VIRUSTOTAL_API_KEY=your_key_here        # optional, for hash/IP reputation
 THEHIVE_URL=http://localhost:9000
 THEHIVE_API_KEY=your_key_here
 ```
@@ -122,7 +132,7 @@ THEHIVE_API_KEY=your_key_here
 docker compose up -d
 ```
 
-This starts: Wazuh Manager, Wazuh Indexer, Wazuh Dashboard, TheHive, Shuffle, and the Python AI microservice.
+This starts: Wazuh Manager, Wazuh Indexer, Wazuh Dashboard, TheHive, Shuffle, Ollama, and the Python AI microservice.
 
 ### 4. Access the dashboard
 
@@ -131,12 +141,12 @@ This starts: Wazuh Manager, Wazuh Indexer, Wazuh Dashboard, TheHive, Shuffle, an
 | Wazuh Dashboard | http://localhost:5601 | admin / SecretPassword |
 | TheHive | http://localhost:9000 | admin@thehive.local / secret |
 | Shuffle | http://localhost:3001 | set on first login |
-| AI API (FastAPI) | http://localhost:8000/docs | - |
+| AI API (FastAPI) | http://localhost:8000/docs | — |
 
 ### 5. Install a Wazuh agent (on an endpoint to monitor)
 
 ```bash
-# On the endpoint machine - replace WAZUH_MANAGER_IP with Laptop B's IP
+# On the endpoint machine — replace WAZUH_MANAGER_IP with your server's IP
 curl -so wazuh-agent.deb https://packages.wazuh.com/4.x/apt/pool/main/w/wazuh-agent/wazuh-agent_4.7.0-1_amd64.deb \
   && sudo WAZUH_MANAGER=WAZUH_MANAGER_IP dpkg -i ./wazuh-agent.deb
 sudo systemctl start wazuh-agent
@@ -165,14 +175,16 @@ siem-ai-dashboard/
 │   └── 07-test-results.md
 │
 ├── diagrams/
-│   ├── architecture.excalidraw
-│   └── architecture.png
+│   └── architecture.svg
 │
 ├── rules/
 │   ├── brute_force.xml
+│   ├── off_hours_login.xml
+│   ├── privilege_escalation.xml
 │   ├── lateral_movement.xml
 │   ├── ransomware_fim.xml
-│   └── privilege_escalation.xml
+│   ├── data_exfil.xml
+│   └── malicious_process.xml
 │
 ├── dashboards/
 │   ├── soc-analyst-view.json
@@ -182,6 +194,7 @@ siem-ai-dashboard/
     ├── main.py
     ├── anomaly.py
     ├── ueba.py
+    ├── sanitizer.py
     ├── summarizer.py
     ├── requirements.txt
     └── Dockerfile
@@ -193,14 +206,14 @@ siem-ai-dashboard/
 
 | Phase | Status |
 |---|---|
-| Phase 1 - Documentation & PoC planning | 🚧 In progress |
-| Phase 2 - Wazuh deployment | ⬜ Planned |
-| Phase 3 - Custom detection rules | ⬜ Planned |
-| Phase 4 - Custom OpenSearch dashboard | ⬜ Planned |
-| Phase 5 - AI / ML layer | ⬜ Planned |
-| Phase 6 - Integrations | ⬜ Planned |
-| Phase 7 - Testing & red team simulation | ⬜ Planned |
-| Phase 8 - Finalise & publish | ⬜ Planned |
+| Phase 1 — Documentation & PoC planning | ✅ Complete |
+| Phase 2 — Wazuh deployment | 🚧 In progress — stack deployed, Windows agent connected |
+| Phase 3 — Custom detection rules | 🚧 In progress — several rules written, MITRE mapping + testing pending |
+| Phase 4 — Custom OpenSearch dashboard | 🚧 In progress — real-time alert queue panel underway |
+| Phase 5 — AI / ML layer | ⬜ Planned |
+| Phase 6 — Integrations | ⬜ Planned |
+| Phase 7 — Testing & red team simulation | ⬜ Planned |
+| Phase 8 — Finalise & publish | ⬜ Planned |
 
 → Full details in [`docs/06-roadmap.md`](docs/06-roadmap.md)
 
@@ -208,7 +221,7 @@ siem-ai-dashboard/
 
 ## 🤝 Contributing
 
-Contributions are welcome - new detection rules, dashboard panels, AI model improvements, or documentation fixes.
+Contributions are welcome — new detection rules, dashboard panels, AI pipeline improvements, or documentation fixes.
 
 → See [`CONTRIBUTING.md`](CONTRIBUTING.md) for guidelines.
 
@@ -216,9 +229,9 @@ Contributions are welcome - new detection rules, dashboard panels, AI model impr
 
 ## 📄 License
 
-MIT License - free to use, modify, and distribute.
+MIT License — free to use, modify, and distribute.
 
 ---
 
 > Built as a proof of concept for AI-enhanced SOC operations.
-> Open-source stack - $0 licensing cost.
+> Open-source stack, local-first AI — $0 licensing cost.
